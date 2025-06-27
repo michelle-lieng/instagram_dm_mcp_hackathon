@@ -59,7 +59,7 @@ Claude:
 
 ### 5. 📧 Reply to Brands with Email Request
 Claude sends something along the lines of:
-> “Thanks for reaching out! Please email me at shells@lashes.com with your brief + budget 💌”
+> “Thanks for reaching out! Please email me at shellslashes@gmail.com with your brief + budget 💌”
 
 ### 6. 💼 Cold Messages Brands
 Claude:
