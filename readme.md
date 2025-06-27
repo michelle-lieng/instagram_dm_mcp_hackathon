@@ -6,6 +6,10 @@ You are a **creator, service provider, or small business** who gets overwhelmed 
 
 [![Watch the demo on YouTube](https://img.youtube.com/vi/2UOSPx6RDyE/hqdefault.jpg)](https://www.youtube.com/watch?v=2UOSPx6RDyE)
 
+## Trailer as posted on X and Build Club view here
+
+https://www.youtube.com/watch?v=duW4s2tAMrc
+
 ---
 
 ## ⚙️ Tech Stack
