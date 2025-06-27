@@ -6,6 +6,9 @@ import os
 from dotenv import load_dotenv
 import logging
 from pathlib import Path
+from instagrapi.exceptions import LoginRequired
+import time
+import random
 
 # Load environment variables from .env file
 load_dotenv()
@@ -25,6 +28,70 @@ mcp = FastMCP(
    instructions=INSTRUCTIONS
 )
 
+USERNAME = os.getenv("INSTAGRAM_USERNAME")
+PASSWORD = os.getenv("INSTAGRAM_PASSWORD")
+# Use absolute path to session file in project root
+SESSION_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "insta_session.json")
+
+def login_user():
+    """
+    Attempts to login to Instagram using either the provided session information
+    or the provided username and password.
+    """
+    session = None
+    login_via_session = False
+    login_via_pw = False
+
+    # Try to load session if file exists
+    if os.path.exists(SESSION_FILE):
+        try:
+            session = client.load_settings(SESSION_FILE)
+        except Exception as e:
+            logger.info("Couldn't load session file: %s" % e)
+            session = None
+
+    if session:
+        try:
+            client.set_settings(session)
+            client.login(USERNAME, PASSWORD)
+
+            # check if session is valid
+            try:
+                client.get_timeline_feed()
+                time.sleep(random.uniform(2, 4))
+
+            except LoginRequired:
+                logger.info("Session is invalid, need to login via username and password")
+
+                old_session = client.get_settings()
+
+                # use the same device uuids across logins
+                client.set_settings({})
+                client.set_uuids(old_session["uuids"])
+
+                client.login(USERNAME, PASSWORD)
+
+                client.get_timeline_feed()
+                time.sleep(random.uniform(2, 4))
+
+            login_via_session = True
+        except Exception as e:
+            logger.info("Couldn't login user using session information: %s" % e)
+
+    if not login_via_session:
+        try:
+            logger.info("Attempting to login via username and password. username: %s" % USERNAME)
+            if client.login(USERNAME, PASSWORD):
+                login_via_pw = True
+
+                client.get_timeline_feed()
+                time.sleep(random.uniform(2, 4))
+
+        except Exception as e:
+            logger.info("Couldn't login user using username and password: %s" % e)
+
+    if not login_via_pw and not login_via_session:
+        raise Exception("Couldn't login user with either password or session")
 
 @mcp.tool()
 def send_message(username: str, message: str) -> Dict[str, Any]:
@@ -250,23 +317,24 @@ def list_pending_chats(amount: int = 20) -> Dict[str, Any]:
         return {"success": False, "message": str(e)}
 
 
-@mcp.tool()
-def search_threads(query: str) -> Dict[str, Any]:
-    """Search Instagram Direct Message threads by username or keyword.
+# NOTE: COMMENTING THIS OUT SINCE I FOUND THIS TOOL DISTRACTED MY LLM AND WASN'T TOO USEFUL FOR ME
 
-    Args:
-        query: The search term (username or keyword).
-    Returns:
-        A dictionary with success status and the search results or error message.
-    """
-    if not query:
-        return {"success": False, "message": "Query must be provided."}
-    try:
-        results = client.direct_search(query)
-        return {"success": True, "results": [r.dict() if hasattr(r, 'dict') else str(r) for r in results]}
-    except Exception as e:
-        return {"success": False, "message": str(e)}
+# @mcp.tool()
+# def search_threads(query: str) -> Dict[str, Any]:
+#     """Search Instagram Direct Message threads by username or keyword.
 
+#     Args:
+#         query: The search term (username or keyword).
+#     Returns:
+#         A dictionary with success status and the search results or error message.
+#     """
+#     if not query:
+#         return {"success": False, "message": "Query must be provided."}
+#     try:
+#         results = client.direct_search(query)
+#         return {"success": True, "results": [r.dict() if hasattr(r, 'dict') else str(r) for r in results]}
+#     except Exception as e:
+#         return {"success": False, "message": str(e)}
 
 @mcp.tool()
 def get_thread_by_participants(user_ids: List[int]) -> Dict[str, Any]:
@@ -801,31 +869,176 @@ def download_shared_post_from_message(message_id: str, thread_id: str, download_
     except Exception as e:
         return {"success": False, "message": f"Failed to process message: {str(e)}"}
 
+@mcp.tool()
+def get_threads_where_user_was_not_last_sender(limit: int = 30) -> Dict[str, Any]:
+    """
+    Return threads where the authenticated user was NOT the last to send a message.
+
+    Args:
+        limit: Number of threads to fetch (default = 30)
+    Returns:
+        A dictionary with thread details where the last message was from someone else.
+    """
+    try:
+        # Ensure you have the correct logged-in user ID
+        user_info = client.account_info()
+        my_user_id = user_info.pk
+
+        threads = client.direct_threads(amount=limit)
+        result_threads = []
+
+        for thread in threads:
+            messages = client.direct_messages(thread.id, amount=1)
+            if not messages:
+                continue
+
+            last_msg = messages[0]
+            last_sender_id = getattr(last_msg, "user_id", None)
+
+            # Only include if the last message is NOT from you
+            if last_sender_id and last_sender_id != my_user_id:
+                result_threads.append({
+                    "thread_id": thread.id,
+                    "thread_title": getattr(thread, "thread_title", ""),
+                    "last_message": getattr(last_msg, "text", "") or getattr(last_msg, "message", ""),
+                    "last_sender_user_id": last_sender_id,
+                    "timestamp": str(getattr(last_msg, "timestamp", "")),
+                })
+
+        return {
+            "success": True,
+            "count": len(result_threads),
+            "threads": result_threads
+        }
+
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
+@mcp.tool()
+def get_latest_messages_from_user(username: str, n: int = 5) -> Dict[str, Any]:
+    """
+    Retrieve the latest N messages sent by a specific user across all DM threads.
+
+    Args:
+        username: Instagram username of the sender.
+        n: Number of most recent messages to return (default = 5)
+
+    Returns:
+        A dictionary with the messages and sender info.
+    """
+    try:
+        user_id = client.user_id_from_username(username)
+        if not user_id:
+            return {"success": False, "message": f"User '{username}' not found."}
+
+        threads = client.direct_threads(amount=30)
+        user_messages = []
+
+        for thread in threads:
+            messages = client.direct_messages(thread.id, amount=30)
+            for msg in messages:
+                if msg.user_id == user_id:
+                    user_messages.append({
+                        "thread_id": thread.id,
+                        "message_id": msg.id,
+                        "timestamp": str(msg.timestamp) if hasattr(msg, 'timestamp') else None,
+                        "text": getattr(msg, 'text', '') or getattr(msg, 'message', '')
+                    })
+
+        # Sort by timestamp (most recent first)
+        user_messages_sorted = sorted(user_messages, key=lambda m: m['timestamp'], reverse=True)
+        return {
+            "success": True,
+            "message_count": len(user_messages_sorted[:n]),
+            "username": username,
+            "latest_messages": user_messages_sorted[:n]
+        }
+
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+# @mcp.tool()
+# def block_user(username: str) -> Dict[str, Any]:
+#     """
+#     Block a specific user by username.
+
+#     Args:
+#         username: The Instagram username of the user to block.
+
+#     Returns:
+#         A dictionary with success status and confirmation.
+#     """
+#     try:
+#         user_id = client.user_id_from_username(username)
+#         if not user_id:
+#             return {"success": False, "message": f"User '{username}' not found."}
+
+#         client.user_block(user_id)
+
+#         return {
+#             "success": True,
+#             "message": f"Blocked user: {username}",
+#             "username": username,
+#             "user_id": user_id
+#         }
+
+#     except Exception as e:
+#         return {"success": False, "message": str(e)}
+
+# NOTE: REPLACED ABOVE TOOL WITH TOOL BELOW WHICH ALSO REMOVES THEM FROM INBOX!
+
+@mcp.tool()
+def block_and_remove_user(username: str) -> Dict[str, Any]:
+    """
+    Block a specific user and hide their thread from the inbox.
+
+    Args:
+        username: The Instagram username of the user to block.
+
+    Returns:
+        A dictionary with success status and confirmation.
+    """
+    try:
+        # Get user ID
+        user_id = client.user_id_from_username(username)
+        if not user_id:
+            return {"success": False, "message": f"User '{username}' not found."}
+
+        # Block the user
+        client.user_block(user_id)
+
+        # Find thread(s) with this user
+        threads = client.direct_threads(amount=50)
+        hidden_threads = []
+
+        for thread in threads:
+            user_ids = [u.pk for u in thread.users]
+            if user_id in user_ids:
+                try:
+                    client.direct_thread_hide(thread.id)
+                    hidden_threads.append(thread.id)
+                except Exception as hide_err:
+                    continue  # Skip if unable to hide a thread
+
+        return {
+            "success": True,
+            "message": f"Blocked user '{username}' and removed {len(hidden_threads)} thread(s) from inbox.",
+            "username": username,
+            "user_id": user_id,
+            "hidden_threads": hidden_threads
+        }
+
+    except Exception as e:
+        return {"success": False, "message": str(e)}
 
 if __name__ == "__main__":
-   parser = argparse.ArgumentParser()
-   parser.add_argument("--username", type=str, help="Instagram username (can also be set via INSTAGRAM_USERNAME env var)")
-   parser.add_argument("--password", type=str, help="Instagram password (can also be set via INSTAGRAM_PASSWORD env var)")
-   args = parser.parse_args()
-
-   # Get credentials from environment variables or command line arguments
-   username = args.username or os.getenv("INSTAGRAM_USERNAME")
-   password = args.password or os.getenv("INSTAGRAM_PASSWORD")
-
-   if not username or not password:
-       logger.error("Instagram credentials not provided. Please set INSTAGRAM_USERNAME and INSTAGRAM_PASSWORD environment variables in a .env file, or provide --username and --password arguments.")
-       print("Error: Instagram credentials not provided.")
-       print("Please either:")
-       print("1. Create a .env file with INSTAGRAM_USERNAME and INSTAGRAM_PASSWORD")
-       print("2. Use --username and --password command line arguments")
-       exit(1)
-
-   try:
-       logger.info("Attempting to login to Instagram...")
-       client.login(username, password)
-       logger.info("Successfully logged in to Instagram")
-       mcp.run(transport="stdio")
-   except Exception as e:
-       logger.error(f"Failed to login to Instagram: {str(e)}")
-       print(f"Error: Failed to login to Instagram - {str(e)}")
-       exit(1)
+    try:
+        logger.info("Attempting to login to Instagram...")
+        login_user()
+        logger.info("Successfully logged in to Instagram")
+        mcp.run(transport="stdio")
+    except Exception as e:
+        logger.error(f"Failed to login to Instagram: {e}")
+        logger.info("Starting MCP server without Instagram login...")
+    

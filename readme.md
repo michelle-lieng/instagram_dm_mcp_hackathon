@@ -1,232 +1,119 @@
-# Instagram DM MCP server
+# 💼 Claude-Powered Instagram Influencer + Small Business Agent (MCP Stack)
 
-This is a Model Context Protocol (MCP) server for sending instagram Direct Messages.
+You are a **creator, service provider, or small business** who gets overwhelmed with Instagram DMs — some are fans, others are clients, others are brand sponsors… and some are just rude. You also have Notion pages and Google Calendar events to manage.
 
-With this you can send Instagram Direct Messages from your account (more capabilities coming soon).
-
-Here's an example of what you can do when it's connected to Claude.
-
-
-https://github.com/user-attachments/assets/9c945f25-4484-4223-8d6b-5bf31243464c
-
-
-> To get updates on this and other projects we work on [enter your email here](https://tally.so/r/np6rYy)
-
-PS: Join our [Twitter community](https://twitter.com/i/communities/1937504082635170114) for all things MCP 
+Instead of doing it all yourself, this Claude agent does it for you.
 
 ---
 
-## Hackathon Submission
+## ⚙️ Tech Stack
 
-Build anything using this Instagram DM MCP (can be technical, no-code or low-code) and submit!
+This project is built by integrating and extending:
 
-No restrictions, open to anyone/anywhere to join.
+- [`instagram_dm_mcp`](https://github.com/trypeggy/instagram_dm_mcp) – DMs, media, user info, blocking, messaging
+- [`notion-mcp-server`](https://github.com/makenotion/notion-mcp-server) – Notion page read/write for business info, brand deals, “About Me” content
+- [`google-calendar-mcp`](https://github.com/nspady/google-calendar-mcp) – For availability checking, deadline tracking, reminders
 
-<div align="left">
-
-[![Submit now](https://img.shields.io/badge/Submit%20now-black?style=for-the-badge&logo=tally&logoColor=white&labelColor=000000&color=000000&size=large)](https://tally.so/r/mR18zl)
-
-</div>
-
-> Note: submisions due by Friday 27 June 11:59PM PST
-
-### Three cash prizes up for grabs
-
-1. $5k USD - Breaking the internet (go viral AF)
-2. $2.5k USD - Technical Sorcery (coolest technical implementation)
-3. $2.5k USD - Holy Sh*t Award (make our jaws drop)
+It’s fully Claude-compatible (via Claude Desktop and `stdio` transport).
 
 ---
 
-## Installation
+## 👤 Demo Persona: *ShellsLashes*
 
-### Prerequisites
+To show how this works in practice, we created a persona:
 
-- Python 3.11+
-- Anthropic Claude Desktop app (or Cursor)
-- Pip (Python package manager), install with `python -m pip install`
-- An instagram account
+> ShellsLashes is a Sydney-based lash artist + beauty influencer. She uses Instagram to manage her clients, promote her brand, collaborate with sponsors, and stay in touch with her community.
 
-### Steps
-
-1. **Clone this repository**
-
-   ```bash
-   git clone https://github.com/trypeggy/instagram_dm_mcp.git
-   cd instagram_dm_mcp
-   ```
-
-2. **Install dependencies**
-
-  - Using uv (recommended):
-    ```bash
-    uv sync
-    ```
-  - Using Pip:
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-3. **Configure Instagram credentials**
-
-   You have two options for providing your Instagram credentials:
-
-   **Option A: Environment Variables (Recommended)**
-   
-   **Quick Setup (Recommended):**
-   
-   Run the helper script:
-   
-   ```bash
-   python setup_env.py
-   ```
-   
-   This will interactively prompt you for your credentials and create the `.env` file securely.
-   
-   **Manual Setup:**
-   
-   Create a `.env` file in the project root:
-   
-   ```bash
-   cp env.example .env
-   ```
-   
-   Then edit `.env` with your actual credentials:
-   
-   ```
-   INSTAGRAM_USERNAME=your_instagram_username
-   INSTAGRAM_PASSWORD=your_instagram_password
-   ```
-   
-   **Option B: Command Line Arguments**
-   
-   You can still pass credentials as command line arguments (less secure).
-
-4. **Connect to the MCP server**
-
-   **For Claude Desktop:**
-   
-   Save this as `claude_desktop_config.json` in your Claude Desktop configuration directory at:
-
-   ```
-   ~/Library/Application Support/Claude/claude_desktop_config.json
-   ```
-
-   **For Cursor:**
-   
-   Save this as `mcp.json` in your Cursor configuration directory at:
-
-   ```
-   ~/.cursor/mcp.json
-   ```
-
-   **Configuration with Environment Variables (Recommended):**
-   - Using uv
-   
-   ```json
-   {
-     "mcpServers": {
-       "instagram_dms": {
-           "command": "uv",
-           "args": [
-             "run",
-             "--directory",
-             "PATH/TO/instagram_dm_mcp",
-             "python",
-             "src/mcp_server.py"
-           ]
-        }
-      }
-    }
-   ```
-
-   - Using Python
-    ```json
-    {
-      "mcpServers": {
-        "instagram_dms": {
-          "command": "python",
-          "args": [
-            "{{PATH_TO_SRC}}/instagram_dm_mcp/src/ mcp_server.py"
-          ]
-        }
-      }
-    }
-    ```
-
-   **Configuration with Command Line Arguments:**
-   
-   ```json
-   {
-     "mcpServers": {
-       "instagram_dms": {
-         "command": "python",
-         "args": [
-           "{{PATH_TO_SRC}}/instagram_dm_mcp/src/mcp_server.py",
-           "--username",
-           "{{YOUR_INSTAGRAM_USERNAME}}",
-          "--password",
-          "{{YOUR_INSTAGRAM_PASSWORD}}"
-         ]
-       }
-     }
-   }
-   ```
-
-5. **Restart Claude Desktop / Cursor**
-   
-   Open Claude Desktop and you should now see the Instagram DM MCP as an available integration.
-
-   Or restart Cursor.
----
-
-## Usage
-
-Below is a list of all available tools and what they do:
-
-| Tool Name                   | Description                                                                                   |
-|-----------------------------|-----------------------------------------------------------------------------------------------|
-| `send_message`              | Send an Instagram direct message to a user by username.                                       |
-| `send_photo_message`        | Send a photo as an Instagram direct message to a user by username.                            |
-| `send_video_message`        | Send a video as an Instagram direct message to a user by username.                            |
-| `list_chats`                | Get Instagram Direct Message threads (chats) from your account, with optional filters/limits.  |
-| `list_messages`             | Get messages from a specific Instagram Direct Message thread by thread ID. Now exposes `item_type` and shared post/reel info for each message. Use this to determine which download tool to use. |
-| `download_media_from_message` | Download a direct-uploaded photo or video from a DM message (not for shared posts/reels/clips). |
-| `download_shared_post_from_message` | Download media from a shared post, reel, or clip in a DM message (not for direct uploads). |
-| `list_media_messages`       | List all messages containing direct-uploaded media (photo/video) in a DM thread.              |
-| `mark_message_seen`         | Mark a specific message in an Instagram Direct Message thread as seen.                         |
-| `list_pending_chats`        | Get Instagram Direct Message threads from your pending inbox.                                  |
-| `search_threads`            | Search Instagram Direct Message threads by username or keyword.                                |
-| `get_thread_by_participants`| Get an Instagram Direct Message thread by participant user IDs.                                |
-| `get_thread_details`        | Get details and messages for a specific Instagram Direct Message thread by thread ID.          |
-| `get_user_id_from_username` | Get the Instagram user ID for a given username.                                                |
-| `get_username_from_user_id` | Get the Instagram username for a given user ID.                                                |
-| `get_user_info`             | Get information about a specific Instagram user by username.                        |
-| `search_users`              | Search for Instagram users by username                                              |
-| `get_user_stories`          | Get recent stories from a specific Instagram user by username.                                  |
-| `like_media`               | Like or unlike a specific media post by media ID.                                                       |
-| `get_user_followers`        | Get a list of followers for a specific Instagram user by username.                             |
-| `get_user_following`        | Get a list of users that a specific Instagram user is following by username.                   |
-| `get_user_posts`            | Get recent posts from a specific Instagram user by username.                                   |
+## Full demo
 
 
 ---
 
-## Troubleshooting
+## 🔥 Core Features & Scenarios (with demo videos)
 
-For additional Claude Desktop integration troubleshooting, see the [MCP documentation](https://modelcontextprotocol.io/quickstart/server#claude-for-desktop-integration-issues). The documentation includes helpful tips for checking logs and resolving common issues.
+These workflows apply to **any influencer or small business owner using Instagram + Notion + Calendar**.
+
+### 1. 📅 Reply to Client Inquiries Using Calendar + Notion
+Claude checks:
+- Messages asking for pricing, aftercare, or bookings
+- Replies with info from Notion (“Business Info” page)
+- Checks Google Calendar availability and sends open slots
+- Replied to both dms in inbox and pending inbox if you specify
+
+### 2. 📅 Create event in Google Calender from Instagram DM
+- Checks instagram dm if request for booking does so
+
+### 3. ❌ Block and Remove Haters
+Claude detects toxic messages, calls:
+- `block_and_remove_user()`
+- Deletes or hides the thread
+
+### 4. 💼 Add Brand Deals to Notion Tracker
+Claude:
+- Scans for messages from sponsors/collaborators
+- Summarizes the pitch
+- Adds it to a Notion “Brand Deal Tracker” page
+
+### 5. 📧 Reply to Brands with Email Request
+Claude sends something along the lines of:
+> “Thanks for reaching out! Please email me at shells@lashes.com with your brief + budget 💌”
+
+### 6. 💼 Cold Messages Brands
+Claude:
+- Pitches to brands for collabs via insta dms
+- Can connect with Notion (about me page) to curate to you
+
+### 7. 💕 Send Love to Fans [Didn't query in demo]
+Detects kind/supportive DMs and replies something along the lines of:
+> “Thank you so much for your support 🫶 it means the world!”
 
 ---
 
-## Feedback
+## 🧰 Custom Functions Added to `instagram_dm_mcp`
 
-Your feedback will be massively appreciated. Please [tell us](mailto:tanmay@usegala.com) which features on that list you like to see next or request entirely new ones.
+### ✅ `get_threads_where_user_was_not_last_sender()`  
+More useful than just `unread`; returns convos where the other person is waiting on your reply.
+
+### ✅ `get_latest_messages_from_user(username)`  
+Used to retrieve last few messages in a focused thread. (Less used in final agent, but still included.)
+
+### ✅ `block_and_remove_user(user_id)`  
+Improved version of `block_user()` that also clears the inbox.
+
+### ✅ Session Saving & Reuse Logic  
+Added `save_session.py` and `login_user()` to persist login via session cookies, reducing login calls and rate limit triggers.
 
 ---
 
-## License
+## 🐛 Known Issues – Rate Limiting
 
-This project is licensed under the MIT License.
+### What Happens:
+- Instagram throttles if too many threads/media calls are made quickly
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python](https://img.shields.io/badge/python-3.12+-green.svg)
+### What We Did:
+- Reused session cookies  
+- Limited number of messages retrieved per session  
+- Still hit limits if too many threads accessed too fast
+
+---
+
+## ⚙️ Setup Instructions
+
+```bash
+# 1. Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # or .venv\\Scripts\\activate on Windows
+
+# 2. Set environment variables
+export INSTAGRAM_USERNAME="your_username"
+export INSTAGRAM_PASSWORD="your_password"
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Save Instagram session
+python save_session.py
+
+# 5. Follow instructions of each 3 MCP server README's to add to claude
+
+# 6. Open Claude Desktop and start prompting!

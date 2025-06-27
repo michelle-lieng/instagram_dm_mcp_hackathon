@@ -6,3 +6,4 @@ pyvenv.cfg
 *.db
 .env
 .venv
+insta_session.json
