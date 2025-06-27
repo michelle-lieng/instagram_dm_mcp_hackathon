@@ -26,6 +26,7 @@ To show how this works in practice, we created a persona:
 
 ## Full demo
 
+https://www.youtube.com/watch?v=2UOSPx6RDyE
 
 ---
 
