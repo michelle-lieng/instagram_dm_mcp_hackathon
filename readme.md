@@ -26,8 +26,7 @@ To show how this works in practice, we created a persona:
 
 ## Full demo
 
-https://www.youtube.com/watch?v=2UOSPx6RDyE
-
+[![Watch the demo on YouTube](https://img.youtube.com/vi/2UOSPx6RDyE/hqdefault.jpg)](https://www.youtube.com/watch?v=2UOSPx6RDyE)
 ---
 
 ## 🔥 Core Features & Scenarios (with demo videos)
