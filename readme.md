@@ -1,8 +1,10 @@
 # 💼 Claude-Powered Instagram Influencer + Small Business Agent (MCP Stack)
 
-You are a **creator, service provider, or small business** who gets overwhelmed with Instagram DMs — some are fans, others are clients, others are brand sponsors… and some are just rude. You also have Notion pages and Google Calendar events to manage.
+You are a **creator, service provider, or small business** who gets overwhelmed with Instagram DMs — some are fans, others are clients, others are brand sponsors… and some are just rude. You also have Notion pages and Google Calendar events to manage. Instead of doing it all yourself, this Claude agent does it for you.
 
-Instead of doing it all yourself, this Claude agent does it for you.
+## Full demo
+
+[![Watch the demo on YouTube](https://img.youtube.com/vi/2UOSPx6RDyE/hqdefault.jpg)](https://www.youtube.com/watch?v=2UOSPx6RDyE)
 
 ---
 
@@ -24,9 +26,6 @@ To show how this works in practice, we created a persona:
 
 > ShellsLashes is a Sydney-based lash artist + beauty influencer. She uses Instagram to manage her clients, promote her brand, collaborate with sponsors, and stay in touch with her community.
 
-## Full demo
-
-[![Watch the demo on YouTube](https://img.youtube.com/vi/2UOSPx6RDyE/hqdefault.jpg)](https://www.youtube.com/watch?v=2UOSPx6RDyE)
 ---
 
 ## 🔥 Core Features & Scenarios (with demo videos)
